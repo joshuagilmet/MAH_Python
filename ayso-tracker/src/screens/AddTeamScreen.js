@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { MOCK_TEAMS } from '../data/mockData';
+import { useAppContext } from '../context/AppContext';
 
-export default function LoginScreen({ navigation }) {
+export default function AddTeamScreen({ navigation }) {
   const [code, setCode] = useState('');
+  const { addUnlockedTeam, unlockedTeams } = useAppContext();
 
-  const handleLogin = () => {
+  const handleUnlock = () => {
     if (!code) {
       Alert.alert('Error', 'Please enter a 6-digit code.');
       return;
@@ -14,9 +16,16 @@ export default function LoginScreen({ navigation }) {
     const team = MOCK_TEAMS.find(t => t.accessCode === code);
 
     if (team) {
-      // Navigate to the division view (Home) and pass the unlocked team.
-      // Or go directly to the team's roster. We'll go directly to the team.
-      navigation.navigate('TeamRoster', { team, canEdit: true });
+      // Check if already unlocked
+      if (unlockedTeams.find(t => t.id === team.id)) {
+        Alert.alert('Info', 'You have already unlocked this team.');
+        navigation.goBack();
+        return;
+      }
+
+      addUnlockedTeam(team);
+      Alert.alert('Success', `You have unlocked ${team.name}!`);
+      navigation.goBack();
     } else {
       Alert.alert('Invalid Code', 'The 6-digit code you entered is incorrect.');
     }
@@ -41,8 +50,8 @@ export default function LoginScreen({ navigation }) {
           secureTextEntry
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Access Team</Text>
+        <TouchableOpacity style={styles.button} onPress={handleUnlock}>
+          <Text style={styles.buttonText}>Unlock Team</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

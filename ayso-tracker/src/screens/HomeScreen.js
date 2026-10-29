@@ -1,44 +1,45 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { DIVISIONS, MOCK_TEAMS } from '../data/mockData';
+import { useAppContext } from '../context/AppContext';
 
-export default function HomeScreen({ navigation, route }) {
-  // Get params passed from login
-  const canEdit = route.params?.canEdit ?? false;
+export default function HomeScreen({ navigation }) {
+  const { unlockedTeams } = useAppContext();
 
-  const renderItem = ({ item }) => {
-    // For this simple example, we just filter MOCK_TEAMS by division.
-    // In a real app, this would be a DB query.
-    const teamsInDivision = MOCK_TEAMS.filter(t => t.division === item);
-
+  const renderTeam = ({ item }) => {
     return (
-      <View style={styles.divisionContainer}>
-        <Text style={styles.divisionTitle}>{item}</Text>
-        {teamsInDivision.length === 0 ? (
-          <Text style={styles.noTeamsText}>No teams currently in this division.</Text>
-        ) : (
-          teamsInDivision.map(team => (
-            <TouchableOpacity
-              key={team.id}
-              style={styles.teamCard}
-              onPress={() => navigation.navigate('TeamRoster', { team, canEdit })}
-            >
-              <Text style={styles.teamName}>{team.name}</Text>
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
+      <TouchableOpacity
+        style={styles.teamCard}
+        onPress={() => navigation.navigate('TeamRoster', { team: item, canEdit: true })}
+      >
+        <Text style={styles.teamName}>{item.name}</Text>
+        <Text style={styles.teamDivision}>{item.division}</Text>
+      </TouchableOpacity>
     );
   };
+
+  const ListEmptyComponent = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyTitle}>Welcome to AYSO Tracker!</Text>
+      <Text style={styles.emptySubtitle}>You don&apos;t have access to any teams yet.</Text>
+      <Text style={styles.emptySubtitle}>Tap the button below to enter a 6-digit access code and unlock your team&apos;s roster and ratings.</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={DIVISIONS}
-        keyExtractor={(item) => item}
-        renderItem={renderItem}
+        data={unlockedTeams}
+        keyExtractor={(item) => item.id}
+        renderItem={renderTeam}
         contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={ListEmptyComponent}
       />
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => navigation.navigate('AddTeam')}
+      >
+        <Text style={styles.addButtonText}>+ Unlock a Team</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -49,41 +50,61 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   listContainer: {
-    padding: 15,
+    padding: 20,
+    flexGrow: 1,
   },
-  divisionContainer: {
-    marginBottom: 20,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#002855',
+    marginBottom: 15,
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  teamCard: {
     backgroundColor: '#ffffff',
+    padding: 20,
     borderRadius: 8,
-    padding: 15,
+    marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  divisionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#002855',
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingBottom: 5,
-  },
-  teamCard: {
-    backgroundColor: '#e6e6e6',
-    padding: 15,
-    borderRadius: 6,
-    marginBottom: 8,
+    borderLeftWidth: 5,
+    borderLeftColor: '#C8102E',
   },
   teamName: {
-    fontSize: 16,
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#333',
-    fontWeight: '500',
   },
-  noTeamsText: {
-    color: '#888',
-    fontStyle: 'italic',
-  }
+  teamDivision: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },
+  addButton: {
+    backgroundColor: '#C8102E',
+    margin: 20,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });
