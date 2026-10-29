@@ -1,33 +1,50 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { MOCK_TEAMS } from '../data/mockData';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useAppContext } from '../context/AppContext';
+import { db } from '../config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 export default function AddTeamScreen({ navigation }) {
   const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
   const { addUnlockedTeam, unlockedTeams } = useAppContext();
 
-  const handleUnlock = () => {
+  const handleUnlock = async () => {
     if (!code) {
       Alert.alert('Error', 'Please enter a 6-digit code.');
       return;
     }
 
-    const team = MOCK_TEAMS.find(t => t.accessCode === code);
+    setLoading(true);
 
-    if (team) {
-      // Check if already unlocked
-      if (unlockedTeams.find(t => t.id === team.id)) {
-        Alert.alert('Info', 'You have already unlocked this team.');
+    try {
+      const teamsRef = collection(db, 'teams');
+      const q = query(teamsRef, where("accessCode", "==", code));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // Assume access codes are unique to one team
+        const teamDoc = querySnapshot.docs[0];
+        const team = { id: teamDoc.id, ...teamDoc.data() };
+
+        if (unlockedTeams.find(t => t.id === team.id)) {
+          Alert.alert('Info', 'You have already unlocked this team.');
+          setLoading(false);
+          navigation.goBack();
+          return;
+        }
+
+        addUnlockedTeam(team);
+        Alert.alert('Success', `You have unlocked ${team.name}!`);
         navigation.goBack();
-        return;
+      } else {
+        Alert.alert('Invalid Code', 'The 6-digit code you entered is incorrect.');
       }
-
-      addUnlockedTeam(team);
-      Alert.alert('Success', `You have unlocked ${team.name}!`);
-      navigation.goBack();
-    } else {
-      Alert.alert('Invalid Code', 'The 6-digit code you entered is incorrect.');
+    } catch (error) {
+      console.error("Error fetching team:", error);
+      Alert.alert('Error', 'Could not verify code with the server. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -50,8 +67,12 @@ export default function AddTeamScreen({ navigation }) {
           secureTextEntry
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleUnlock}>
-          <Text style={styles.buttonText}>Unlock Team</Text>
+        <TouchableOpacity style={styles.button} onPress={handleUnlock} disabled={loading}>
+          {loading ? (
+             <ActivityIndicator color="#ffffff" />
+          ) : (
+             <Text style={styles.buttonText}>Unlock Team</Text>
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
