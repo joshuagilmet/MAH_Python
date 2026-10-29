@@ -19,9 +19,9 @@ export default function HomeScreen({ navigation }) {
 
   const ListEmptyComponent = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyTitle}>Welcome to AYSO Tracker!</Text>
-      <Text style={styles.emptySubtitle}>You don&apos;t have access to any teams yet.</Text>
-      <Text style={styles.emptySubtitle}>Tap the button below to enter a 6-digit access code and unlock your team&apos;s roster and ratings.</Text>
+      <Text style={styles.emptyTitle}>No Teams Unlocked</Text>
+      <Text style={styles.emptySubtitle}>You haven&apos;t unlocked any team rosters yet.</Text>
+      <Text style={styles.emptySubtitle}>Go to the &quot;More&quot; tab below to enter a 6-digit access code.</Text>
     </View>
   );
 
@@ -34,12 +34,6 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={ListEmptyComponent}
       />
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => navigation.navigate('AddTeam')}
-      >
-        <Text style={styles.addButtonText}>+ Unlock a Team</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -94,17 +88,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 5,
-  },
-  addButton: {
-    backgroundColor: '#C8102E',
-    margin: 20,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  }
 });
