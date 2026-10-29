@@ -1,12 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { calculatePositionScore } from '../data/mockData';
+import { useAppContext } from '../context/AppContext';
 
 export default function TeamRosterScreen({ route, navigation }) {
-  const { team, canEdit } = route.params;
+  const { team: routeTeam, canEdit } = route.params;
+  const { unlockedTeams } = useAppContext();
+
+  // Find the up-to-date team from Context, fallback to route param if not found
+  const activeTeam = unlockedTeams.find(t => t.id === routeTeam.id) || routeTeam;
 
   // Calculate scores for all players and sort them descending (Leaderboard)
-  const rankedPlayers = [...team.players].map(p => ({
+  const rankedPlayers = [...activeTeam.players].map(p => ({
     ...p,
     computedScore: parseFloat(calculatePositionScore(p)) || 0
   })).sort((a, b) => b.computedScore - a.computedScore);
@@ -17,7 +22,7 @@ export default function TeamRosterScreen({ route, navigation }) {
     return (
       <TouchableOpacity
         style={styles.playerCard}
-        onPress={() => navigation.navigate('PlayerDetail', { player: item, canEdit })}
+        onPress={() => navigation.navigate('PlayerDetail', { player: item, teamId: activeTeam.id, canEdit })}
       >
         <View style={styles.rankContainer}>
           <Text style={styles.rankText}>#{index + 1}</Text>
@@ -37,8 +42,8 @@ export default function TeamRosterScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.teamName}>{team.name}</Text>
-        <Text style={styles.division}>{team.division}</Text>
+        <Text style={styles.teamName}>{activeTeam.name}</Text>
+        <Text style={styles.division}>{activeTeam.division}</Text>
         <Text style={styles.leaderboardTitle}>Team Leaderboard</Text>
         {!canEdit && <Text style={styles.readOnlyText}>View Only Mode</Text>}
       </View>

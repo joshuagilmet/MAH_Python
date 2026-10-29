@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { SKILLS, calculatePositionScore, POSITION_SKILLS } from '../data/mockData';
+import { useAppContext } from '../context/AppContext';
 
 export default function PlayerDetailScreen({ route, navigation }) {
-  const { player, canEdit } = route.params;
+  const { player, teamId, canEdit } = route.params;
+  const { updatePlayer } = useAppContext();
   const [ratings, setRatings] = useState({ ...player.ratings });
 
   // Calculate score on the fly during render
@@ -24,8 +26,8 @@ export default function PlayerDetailScreen({ route, navigation }) {
   };
 
   const handleSave = () => {
-    // In a real app, this would dispatch to a store or make an API call
-    Alert.alert('Saved', 'Player ratings have been updated locally.');
+    updatePlayer(teamId, player.id, ratings);
+    Alert.alert('Saved', 'Player ratings have been updated.');
     navigation.goBack();
   };
 
