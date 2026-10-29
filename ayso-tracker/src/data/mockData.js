@@ -127,20 +127,35 @@ export const DIVISIONS = [
   '19U Boys', '19U Girls',
 ];
 
-// Helper to calculate the position score (unweighted average of relevant skills)
-export const calculatePositionScore = (player) => {
-  const relevantSkills = POSITION_SKILLS[player.position];
+// Calculate the score for a specific position based on ratings
+export const calculateScoreForPosition = (ratings, positionName) => {
+  const relevantSkills = POSITION_SKILLS[positionName];
   if (!relevantSkills || relevantSkills.length === 0) return 0;
 
   let totalScore = 0;
   let count = 0;
 
   relevantSkills.forEach(skill => {
-    if (player.ratings[skill] !== undefined) {
-      totalScore += player.ratings[skill];
+    if (ratings[skill] !== undefined) {
+      totalScore += ratings[skill];
       count++;
     }
   });
 
-  return count === 0 ? 0 : (totalScore / count).toFixed(1);
+  return count === 0 ? 0 : parseFloat((totalScore / count).toFixed(1));
+};
+
+// Returns an array of { position, score } sorted highest to lowest
+export const calculateAllPositionScores = (ratings) => {
+  const scores = Object.values(POSITIONS).map(pos => ({
+    position: pos,
+    score: calculateScoreForPosition(ratings, pos)
+  }));
+
+  return scores.sort((a, b) => b.score - a.score);
+};
+
+// Backward compatibility helper if needed, though we will refactor to use best position
+export const calculatePositionScore = (player) => {
+  return calculateScoreForPosition(player.ratings, player.position).toFixed(1);
 };

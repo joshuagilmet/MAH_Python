@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { calculatePositionScore } from '../data/mockData';
+import { calculateAllPositionScores } from '../data/mockData';
 import { useAppContext } from '../context/AppContext';
 
 export default function TeamRosterScreen({ route, navigation }) {
@@ -10,14 +10,19 @@ export default function TeamRosterScreen({ route, navigation }) {
   // Find the up-to-date team from Context, fallback to route param if not found
   const activeTeam = unlockedTeams.find(t => t.id === routeTeam.id) || routeTeam;
 
-  // Calculate scores for all players and sort them descending (Leaderboard)
-  const rankedPlayers = [...activeTeam.players].map(p => ({
-    ...p,
-    computedScore: parseFloat(calculatePositionScore(p)) || 0
-  })).sort((a, b) => b.computedScore - a.computedScore);
+  // Calculate the BEST score for all players and sort them descending (Leaderboard)
+  const rankedPlayers = [...activeTeam.players].map(p => {
+    const scores = calculateAllPositionScores(p.ratings);
+    const best = scores[0]; // array is sorted highest to lowest
+    return {
+      ...p,
+      bestPosition: best.position,
+      bestScore: best.score || 0
+    };
+  }).sort((a, b) => b.bestScore - a.bestScore);
 
   const renderPlayer = ({ item, index }) => {
-    const score = item.computedScore;
+    const score = item.bestScore;
 
     return (
       <TouchableOpacity
@@ -29,10 +34,10 @@ export default function TeamRosterScreen({ route, navigation }) {
         </View>
         <View style={styles.playerInfo}>
           <Text style={styles.playerName}>{item.name}</Text>
-          <Text style={styles.playerPosition}>{item.position}</Text>
+          <Text style={styles.playerPosition}>{score > 0 ? item.bestPosition : 'Unrated'}</Text>
         </View>
         <View style={styles.scoreContainer}>
-          <Text style={styles.scoreLabel}>Pos. Rating</Text>
+          <Text style={styles.scoreLabel}>Potential</Text>
           <Text style={styles.scoreValue}>{score > 0 ? score.toFixed(1) : 'N/A'}</Text>
         </View>
       </TouchableOpacity>

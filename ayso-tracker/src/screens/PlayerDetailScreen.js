@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { SKILLS, calculatePositionScore, POSITION_SKILLS } from '../data/mockData';
+import { SKILLS, calculateAllPositionScores } from '../data/mockData';
 import { useAppContext } from '../context/AppContext';
 
 export default function PlayerDetailScreen({ route, navigation }) {
@@ -8,8 +8,9 @@ export default function PlayerDetailScreen({ route, navigation }) {
   const { updatePlayer } = useAppContext();
   const [ratings, setRatings] = useState({ ...player.ratings });
 
-  // Calculate score on the fly during render
-  const currentScore = calculatePositionScore({ ...player, ratings });
+  // Calculate all scores dynamically as ratings change
+  const positionScores = useMemo(() => calculateAllPositionScores(ratings), [ratings]);
+  const bestPosition = positionScores[0];
 
   const handleRatingChange = (skill, value) => {
     if (!canEdit) return;
@@ -31,18 +32,28 @@ export default function PlayerDetailScreen({ route, navigation }) {
     navigation.goBack();
   };
 
-  const relevantSkillsForPosition = POSITION_SKILLS[player.position] || [];
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.playerName}>{player.name}</Text>
-        <Text style={styles.playerPosition}>{player.position}</Text>
+        <Text style={styles.playerPosition}>Recommended: {bestPosition?.score > 0 ? bestPosition.position : 'None'}</Text>
 
         <View style={styles.scoreCircle}>
-          <Text style={styles.scoreText}>{currentScore > 0 ? currentScore : 'N/A'}</Text>
-          <Text style={styles.scoreSubText}>Overall</Text>
+          <Text style={styles.scoreText}>{bestPosition?.score > 0 ? bestPosition.score.toFixed(1) : 'N/A'}</Text>
+          <Text style={styles.scoreSubText}>Best Score</Text>
         </View>
+      </View>
+
+      <View style={styles.positionScoresContainer}>
+        <Text style={styles.sectionTitle}>Positional Potential</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+          {positionScores.map((pos) => (
+            <View key={pos.position} style={[styles.posCard, pos.position === bestPosition.position && bestPosition.score > 0 ? styles.bestPosCard : null]}>
+              <Text style={[styles.posName, pos.position === bestPosition.position && bestPosition.score > 0 ? styles.bestPosText : null]}>{pos.position}</Text>
+              <Text style={[styles.posScore, pos.position === bestPosition.position && bestPosition.score > 0 ? styles.bestPosText : null]}>{pos.score > 0 ? pos.score.toFixed(1) : '-'}</Text>
+            </View>
+          ))}
+        </ScrollView>
       </View>
 
       <View style={styles.skillsContainer}>
@@ -50,14 +61,12 @@ export default function PlayerDetailScreen({ route, navigation }) {
         {!canEdit && <Text style={styles.readOnlyNote}>You are in view-only mode.</Text>}
 
         {SKILLS.map(skill => {
-          const isRelevant = relevantSkillsForPosition.includes(skill);
           return (
             <View key={skill} style={styles.skillRow}>
               <View style={styles.skillLabelContainer}>
-                <Text style={[styles.skillName, isRelevant && styles.relevantSkillName]}>
+                <Text style={styles.skillName}>
                   {skill}
                 </Text>
-                {isRelevant && <Text style={styles.relevantBadge}>Primary</Text>}
               </View>
               <TextInput
                 style={[styles.input, !canEdit && styles.disabledInput]}
@@ -123,6 +132,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
+  positionScoresContainer: {
+    paddingTop: 20,
+    paddingHorizontal: 20,
+  },
+  horizontalScroll: {
+    flexDirection: 'row',
+    paddingBottom: 10,
+  },
+  posCard: {
+    backgroundColor: '#ffffff',
+    padding: 15,
+    borderRadius: 8,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  bestPosCard: {
+    backgroundColor: '#002855',
+    borderColor: '#C8102E',
+    borderWidth: 2,
+  },
+  posName: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  posScore: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  bestPosText: {
+    color: '#ffffff',
+  },
   skillsContainer: {
     padding: 20,
   },
@@ -158,20 +208,6 @@ const styles = StyleSheet.create({
   skillName: {
     fontSize: 16,
     color: '#444',
-  },
-  relevantSkillName: {
-    fontWeight: 'bold',
-    color: '#002855',
-  },
-  relevantBadge: {
-    marginLeft: 8,
-    backgroundColor: '#e6f0fa',
-    color: '#002855',
-    fontSize: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    overflow: 'hidden',
   },
   input: {
     width: 50,
